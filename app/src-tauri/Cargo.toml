@@ -2,7 +2,7 @@
 name = "voicin"
 version = "1.0.0"
 edition = "2021"
-description = "Voicin: nhập bằng giọng nói vào con trỏ"
+description = "Voicin: voice typing at the cursor"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

@@ -1,11 +1,11 @@
-// Thu âm micro bằng cpal (WASAPI trên Windows), đổi về mono 16 kHz 16-bit để gửi Google STT.
+// Microphone capture with cpal (WASAPI on Windows), converted to mono 16 kHz for Google Speech.
 use cpal::traits::{DeviceTrait, HostTrait};
 use cpal::SampleFormat;
 use std::sync::mpsc::Sender;
 
 pub const RATE: f64 = 16000.0;
 
-/// Đổi tần số mẫu bằng cách lấy trung bình các mẫu đầu vào cho mỗi mẫu đầu ra
+/// Resamples by averaging the input samples for each output sample
 struct Resampler {
     step: f64,
     t: f64,
@@ -18,7 +18,7 @@ impl Resampler {
         Resampler { step: RATE / input_rate, t: 0.0, sum: 0.0, n: 0 }
     }
 
-    /// `data` là các mẫu xen kẽ theo kênh, `ch` là số kênh
+    /// `data` holds interleaved samples, `ch` is the channel count
     fn feed(&mut self, data: &[f32], ch: usize, out: &mut Vec<i16>) {
         for frame in data.chunks(ch) {
             let mono = frame.iter().sum::<f32>() / frame.len() as f32;
@@ -38,14 +38,14 @@ impl Resampler {
 
 pub fn start(tx: Sender<Vec<i16>>) -> Result<cpal::Stream, String> {
     let host = cpal::default_host();
-    let dev = host.default_input_device().ok_or("Không tìm thấy micro")?;
+    let dev = host.default_input_device().ok_or("No microphone found")?;
     let cfg = dev.default_input_config().map_err(|e| e.to_string())?;
     let rate = cfg.sample_rate().0 as f64;
     let ch = cfg.channels() as usize;
     let fmt = cfg.sample_format();
     let config: cpal::StreamConfig = cfg.into();
     let mut rs = Resampler::new(rate);
-    let err_fn = |e| eprintln!("[Voicin] lỗi micro: {e}");
+    let err_fn = |e| eprintln!("[Voicin] microphone error: {e}");
 
     let stream = match fmt {
         SampleFormat::F32 => dev.build_input_stream(
@@ -73,7 +73,7 @@ pub fn start(tx: Sender<Vec<i16>>) -> Result<cpal::Stream, String> {
             err_fn,
             None,
         ),
-        other => return Err(format!("Định dạng micro chưa hỗ trợ: {other:?}")),
+        other => return Err(format!("Unsupported microphone sample format: {other:?}")),
     }
     .map_err(|e| e.to_string())?;
     Ok(stream)

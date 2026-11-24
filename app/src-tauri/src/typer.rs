@@ -1,5 +1,5 @@
-// Gõ chữ vào cửa sổ đang focus (tại vị trí con trỏ) bằng SendInput với KEYEVENTF_UNICODE.
-// Cách này không phụ thuộc bộ gõ tiếng Việt hay bố cục bàn phím.
+// Types text into the focused window (at the cursor) with SendInput and KEYEVENTF_UNICODE.
+// This does not depend on the active keyboard layout or any IME.
 use windows::Win32::UI::Input::KeyboardAndMouse::{
     SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, KEYEVENTF_UNICODE, VIRTUAL_KEY,
     VK_RETURN,

@@ -37,8 +37,8 @@
       "icons/icon.ico"
     ],
     "category": "Utility",
-    "shortDescription": "Nhập bằng giọng nói vào con trỏ",
-    "longDescription": "Nhấn và thả Ctrl để bật/tắt nghe. Chữ nói ra được gõ vào vị trí con trỏ ở bất kỳ ứng dụng nào.",
+    "shortDescription": "Voice typing at the cursor",
+    "longDescription": "Press and release Ctrl to start or stop listening. Your speech is typed at the cursor in any app.",
     "windows": {
       "nsis": {
         "installMode": "currentUser",

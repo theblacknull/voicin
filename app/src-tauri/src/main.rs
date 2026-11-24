@@ -1,7 +1,7 @@
-// Voicin: nhập giọng nói vào vị trí con trỏ ở bất kỳ app nào.
-// - Nhấn và thả Ctrl để BẬT/TẮT nghe. Thả phím vẫn tiếp tục nghe.
-// - Âm thanh micro được cắt thành từng câu (theo khoảng lặng), gửi lên Google STT,
-//   rồi chữ được gõ vào cửa sổ đang focus. Cửa sổ Tauri chỉ hiển thị trạng thái.
+// Voicin: type by voice at the cursor position in any app.
+// - Press and release Ctrl to toggle listening. Listening continues after the key is released.
+// - Microphone audio is split into utterances (on silence), sent to Google Speech,
+//   and the recognized text is typed into the focused window. The Tauri window only shows status.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod asr;
 mod audio;
@@ -19,11 +19,11 @@ use tauri::{AppHandle, Emitter};
 
 pub static LISTENING: AtomicBool = AtomicBool::new(false);
 static APP: OnceLock<AppHandle> = OnceLock::new();
-// Ngôn ngữ đang dùng: một mã (ví dụ "vi-VN") hoặc nhiều mã khi chọn "Tự động"
+// Active recognition language: one code (e.g. "vi-VN") or several when "auto" is selected
 static LANGS: RwLock<Vec<String>> = RwLock::new(Vec::new());
 const AUTO_LANGS: &str = "vi-VN,en-US,zh-CN,ja-JP,ko-KR,fr-FR,de-DE,es-ES,ru-RU";
 
-/// Giao diện gọi khi người dùng chọn ngôn ngữ. "auto" = tự nhận diện trong danh sách.
+/// Called by the UI when the user picks a language. "auto" = detect among the candidates.
 #[tauri::command]
 fn set_language(code: String) {
     let list: Vec<String> = if code == "auto" {
@@ -36,24 +36,24 @@ fn set_language(code: String) {
     }
 }
 
-/// Gửi sự kiện tới giao diện (nếu cửa sổ đã sẵn sàng)
+/// Sends an event to the UI (if the window is ready)
 fn emit<S: serde::Serialize + Clone>(event: &str, payload: S) {
     if let Some(app) = APP.get() {
         let _ = app.emit(event, payload);
     }
 }
 
-const FRAME: usize = 480; // 30 ms ở 16 kHz
-const MIN_UTTERANCE: usize = 6400; // 0.4 giây: bỏ qua tiếng click
-const MAX_UTTERANCE: usize = 16000 * 12; // tối đa 12 giây mỗi câu
-const END_SILENCE_FRAMES: usize = 20; // 600 ms im lặng thì kết thúc câu
+const FRAME: usize = 480; // 30 ms at 16 kHz
+const MIN_UTTERANCE: usize = 6400; // 0.4 s: ignore clicks
+const MAX_UTTERANCE: usize = 16000 * 12; // at most 12 s per utterance
+const END_SILENCE_FRAMES: usize = 20; // 600 ms of silence ends an utterance
 const DEFAULT_LANGS: &str = "vi-VN";
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     if args.iter().any(|a| a == "--keys") {
-        // Chế độ chẩn đoán: in mã phím khi nhấn, để biết phím Fn/phím bạn chọn gửi mã nào
-        println!("Nhấn phím cần kiểm tra (Ctrl+C để thoát):");
+        // Diagnostic mode: print key codes as they are pressed
+        println!("Press the key to check (Ctrl+C to quit):");
         keys::set_debug(true);
         keys::start(|| {});
         loop {
@@ -86,7 +86,7 @@ fn main() {
         }
     };
     if let Err(e) = <cpal::Stream as cpal::traits::StreamTrait>::play(&stream) {
-        eprintln!("[Voicin] không mở được micro: {e}");
+        eprintln!("[Voicin] could not open the microphone: {e}");
         return;
     }
 
@@ -96,8 +96,8 @@ fn main() {
     keys::set_trigger(trigger);
     keys::start(toggle);
 
-    println!("[Voicin] Sẵn sàng. Nhấn phím kích hoạt (mã 0x{trigger:02X}) để bật/tắt nghe.");
-    // Stream micro phải sống đến khi thoát app (giữ trong biến `stream`)
+    println!("[Voicin] Ready. Press the trigger key (0x{trigger:02X}) to toggle listening.");
+    // The microphone stream must stay alive until the app exits (kept in `stream`)
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             set_language,
@@ -113,11 +113,11 @@ fn main() {
             Ok(())
         })
         .run(tauri::generate_context!())
-        .expect("không chạy được Voicin");
+        .expect("Voicin failed to start");
     drop(stream);
 }
 
-/// Lệnh giao diện: trạng thái bản quyền
+/// UI command: license status
 #[tauri::command]
 fn license_status() -> license::Status {
     license::status()
@@ -142,7 +142,7 @@ async fn license_claim(network: String, tx_hash: String) -> Result<license::Stat
     Ok(license::status())
 }
 
-/// Mỗi giây: gửi trạng thái bản quyền tới giao diện; hết dùng thử thì tự tắt nghe
+/// Every second: send the license status to the UI; stop listening once the trial has expired
 fn license_ticker() {
     thread::spawn(|| loop {
         let st = license::status();
@@ -154,7 +154,7 @@ fn license_ticker() {
     });
 }
 
-/// Đảo trạng thái nghe mỗi lần nhấn phím (không tính lúc giữ phím lặp)
+/// Flips listening state on each trigger press (ignores held-key repeats)
 fn toggle() {
     if !LISTENING.load(Ordering::SeqCst) && !license::can_use() {
         emit("locked", ());
@@ -163,9 +163,9 @@ fn toggle() {
     let was_on = LISTENING.fetch_xor(true, Ordering::SeqCst);
     emit("listening", !was_on);
     if was_on {
-        println!("[Voicin] TẮT nghe");
+        println!("[Voicin] listening OFF");
     } else {
-        println!("[Voicin] BẬT nghe — nói vào micro, chữ sẽ hiện ở con trỏ");
+        println!("[Voicin] listening ON: speak into the microphone; text appears at the cursor");
     }
 }
 
@@ -174,10 +174,10 @@ fn rms(frame: &[i16]) -> f32 {
     (sum / frame.len() as f32).sqrt()
 }
 
-/// Cắt dòng âm thanh thành từng câu dựa trên mức năng lượng (VAD đơn giản, thích nghi theo tiếng ồn nền)
+/// Splits the audio stream into utterances based on energy (simple VAD that adapts to background noise)
 fn segment_loop(rx: Receiver<Vec<i16>>, tx: Sender<Vec<i16>>) {
     let mut pending: Vec<i16> = Vec::new();
-    let mut pre: VecDeque<Vec<i16>> = VecDeque::new(); // 300 ms trước khi phát hiện tiếng nói
+    let mut pre: VecDeque<Vec<i16>> = VecDeque::new(); // 300 ms before speech is detected
     let mut buf: Vec<i16> = Vec::new();
     let mut in_speech = false;
     let mut loud_run = 0usize;
@@ -200,7 +200,7 @@ fn segment_loop(rx: Receiver<Vec<i16>>, tx: Sender<Vec<i16>>) {
             emit("level", if listening { (rms(&frame) * 8.0).min(1.0) } else { 0.0 });
 
             if !listening {
-                // Vừa tắt nghe: gửi nốt câu đang nói dở rồi reset
+                // Listening just stopped: send the unfinished utterance, then reset
                 if in_speech {
                     flush(&mut buf, &tx);
                 }
@@ -242,7 +242,7 @@ fn segment_loop(rx: Receiver<Vec<i16>>, tx: Sender<Vec<i16>>) {
     }
 }
 
-/// Nhận dạng từng câu rồi gõ chữ vào con trỏ
+/// Recognizes each utterance and types the text at the cursor
 fn recognize_loop(rx: Receiver<Vec<i16>>) {
     let mut last_typed: Option<Instant> = None;
     for pcm in rx {
@@ -254,7 +254,7 @@ fn recognize_loop(rx: Receiver<Vec<i16>>) {
                 if t.is_empty() {
                     continue;
                 }
-                // Các câu liên tiếp trong vài giây được ngăn cách bằng dấu cách
+                // Consecutive utterances within a few seconds are separated by a space
                 let recent = last_typed.map_or(false, |at| at.elapsed() < Duration::from_secs(20));
                 let out = if recent { format!(" {t}") } else { t.to_string() };
                 typer::type_text(&out);
@@ -262,7 +262,7 @@ fn recognize_loop(rx: Receiver<Vec<i16>>) {
                 println!("[Voicin] {t}");
                 emit("text", t.to_string());
             }
-            Err(e) => eprintln!("[Voicin] lỗi nhận dạng: {e}"),
+            Err(e) => eprintln!("[Voicin] recognition error: {e}"),
         }
     }
 }

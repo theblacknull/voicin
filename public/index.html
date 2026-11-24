@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voicin: Type with your voice, anywhere</title>
+<meta name="description" content="Voicin types what you say at the cursor in any Windows app. Free 4-hour trial, then $10 lifetime.">
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --fg: #1d1d1f; --muted: #6e6e73; --line: rgba(0,0,0,.08);
+    --blue: #0071e3; --indigo: #5e5ce6; --pink: #ff2d55; --green: #34c759;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #000; --card: #1c1c1e; --fg: #f5f5f7; --muted: #98989d; --line: rgba(255,255,255,.12);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; line-height: 1.5; }
+  a { color: var(--blue); text-decoration: none; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 22px; }
+
+  /* Top bar */
+  nav { position: sticky; top: 0; z-index: 10; backdrop-filter: saturate(180%) blur(20px);
+    background: color-mix(in srgb, var(--bg) 78%, transparent); border-bottom: 1px solid var(--line); }
+  nav .wrap { display: flex; align-items: center; height: 52px; gap: 18px; }
+  .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; color: var(--fg); flex: 1; }
+  .logo { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
+    background: linear-gradient(145deg, #5ac8fa, #007aff 55%, #5856d6); }
+  .logo svg { width: 15px; height: 15px; fill: #fff; }
+  nav a.link { color: var(--fg); font-size: 14px; opacity: .8; }
+  nav a.link:hover { opacity: 1; }
+
+  /* Hero */
+  .hero { text-align: center; padding: 72px 0 40px; }
+  .eyebrow { font-size: 13px; font-weight: 600; color: var(--blue); letter-spacing: .3px; }
+  h1 { font-size: clamp(38px, 6.4vw, 64px); line-height: 1.05; letter-spacing: -1.6px; margin: 12px 0 14px; font-weight: 700; }
+  .grad { background: linear-gradient(90deg, #5ac8fa, #0071e3 45%, #bf5af2 80%, #ff2d55);
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lede { font-size: 19px; color: var(--muted); max-width: 620px; margin: 0 auto 28px; }
+  .cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 22px; border-radius: 999px;
+    font-size: 16px; font-weight: 600; border: 0; cursor: pointer; color: #fff; background: var(--blue); }
+  .btn:hover { filter: brightness(1.08); }
+  .btn.ghost { background: transparent; color: var(--blue); box-shadow: inset 0 0 0 1.5px var(--blue); }
+  .btn svg { width: 17px; height: 17px; fill: currentColor; }
+  .meta { font-size: 13px; color: var(--muted); margin-top: 14px; }
+
+  /* Demo visual: waveform bubble */
+  .demo { margin: 48px auto 0; max-width: 620px; background: var(--card); border-radius: 26px; padding: 26px 24px 22px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.12); }
+  .demo-top { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .demo canvas { width: 100%; height: 90px; display: block; margin: 8px 0 4px; }
+  .typed { font-size: 17px; min-height: 26px; text-align: left; border-top: 1px solid var(--line); padding-top: 14px; margin-top: 6px; }
+  .caret { display: inline-block; width: 2px; height: 1.1em; background: var(--blue); vertical-align: -3px; margin-left: 2px; animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Sections */
+  section { padding: 64px 0; }
+  h2 { font-size: clamp(28px, 4vw, 40px); letter-spacing: -.8px; margin: 0 0 10px; text-align: center; }
+  .sub { text-align: center; color: var(--muted); margin: 0 auto 40px; max-width: 560px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .feature { background: var(--card); border-radius: 20px; padding: 24px; }
+  .ico { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 14px; }
+  .ico svg { width: 22px; height: 22px; fill: #fff; }
+  .feature h3 { margin: 0 0 6px; font-size: 18px; }
+  .feature p { margin: 0; color: var(--muted); font-size: 15px; }
+
+  /* Steps */
+  .steps { counter-reset: s; display: grid; gap: 14px; max-width: 640px; margin: 0 auto; }
+  .step { display: flex; gap: 16px; background: var(--card); border-radius: 18px; padding: 18px 20px; align-items: flex-start; }
+  .num { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--blue); color: #fff; font-weight: 700;
+    display: grid; place-items: center; font-size: 14px; }
+  .step b { display: block; margin-bottom: 2px; }
+  .step span { color: var(--muted); font-size: 15px; }
+
+  /* Pricing / buy */
+  .price-card { max-width: 560px; margin: 0 auto; background: var(--card); border-radius: 26px; padding: 32px 28px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.1); }
+  .price { text-align: center; font-size: 56px; font-weight: 700; letter-spacing: -1.5px; }
+  .price small { font-size: 17px; color: var(--muted); font-weight: 500; letter-spacing: 0; }
+  .price-note { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 22px; }
+  .seg { display: flex; background: rgba(120,120,128,.14); border-radius: 11px; padding: 3px; margin-bottom: 12px; }
+  .seg button { flex: 1; height: 34px; border-radius: 9px; border: 0; background: transparent; color: var(--fg); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .seg button.on { background: var(--card); box-shadow: 0 1px 4px rgba(0,0,0,.15); }
+  .wallet { display: flex; align-items: center; gap: 10px; background: rgba(120,120,128,.1); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
+  .wallet code { flex: 1; font-size: 13px; word-break: break-all; font-family: ui-monospace, Consolas, monospace; }
+  .copy { border: 0; background: none; color: var(--blue); font: inherit; font-weight: 600; cursor: pointer; font-size: 14px; }
+  input { width: 100%; height: 46px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg);
+    padding: 0 14px; font: inherit; font-size: 15px; outline: none; margin-bottom: 12px; }
+  input:focus { border-color: var(--blue); }
+  .btn.full { width: 100%; justify-content: center; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .msg { margin-top: 12px; font-size: 14px; text-align: center; min-height: 20px; color: var(--muted); }
+  .msg.err { color: #ff3b30; }
+  .keybox { margin-top: 14px; background: rgba(52,199,89,.12); border-radius: 14px; padding: 16px; text-align: center; display: none; }
+  .keybox.show { display: block; }
+  .keybox .k { font-family: ui-monospace, Consolas, monospace; font-size: 20px; font-weight: 700; letter-spacing: 1px; margin: 6px 0 10px; word-break: break-all; }
+  .keybox small { color: var(--muted); }
+
+  /* Footer */
+  footer { padding: 36px 0 52px; color: var(--muted); font-size: 13px; text-align: center; border-top: 1px solid var(--line); }
+  footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<nav>
+  <div class="wrap">
+    <div class="brand">
+      <span class="logo"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"/></svg></span>
+      Voicin
+    </div>
+    <a class="link" href="#features">Features</a>
+    <a class="link" href="#buy">Buy</a>
+    <a class="link" href="#faq">FAQ</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Voice typing for Windows</div>
+    <h1>Speak. It types.<br><span class="grad">Anywhere.</span></h1>
+    <p class="lede">Voicin turns your voice into text at the cursor, in any app. Press Ctrl to start, speak naturally, and the words appear where you are typing.</p>
+    <div class="cta">
+      <a class="btn" href="/downloads/Voicin-Setup.exe" download>
+        <svg viewBox="0 0 24 24"><path d="M12 3v11.2l3.6-3.6L17 12l-5 5-5-5 1.4-1.4 3.6 3.6V3h2ZM5 19h14v2H5v-2Z"/></svg>
+        Download for Windows
+      </a>
+      <a class="btn ghost" href="#buy">Get a license · $10</a>
+    </div>
+    <div class="meta">Windows 10/11 · Free 4-hour trial · No account needed</div>
+
+    <div class="demo" aria-hidden="true">
+      <div class="demo-top"><span class="dot"></span> Listening</div>
+      <canvas id="wave" width="600" height="180"></canvas>
+      <div class="typed" id="typed"><span class="caret"></span></div>
+    </div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <h2>Built for speed.</h2>
+    <p class="sub">Dictate emails, notes, chats and documents without leaving the keyboard.</p>
+    <div class="grid">
+      <div class="feature">
+        <div class="ico" style="background:linear-gradient(145deg,#5ac8fa,#007aff)"><svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"/></svg></div>
+        <h3>Works in any app</h3>
+        <p>Text goes wherever the cursor is: browsers, Word, chat apps, code editors.</p>
+      </div>
+      <div class="feature">
+        <div class="ico" style="background:linear-gradient(145deg,#bf5af2,#5e5ce6)"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 5v5.4l3.5 2.1-1 1.7L11 13V7h2Z"/></svg></div>
+        <h3>Speaks naturally</h3>
+        <p>Pauses end a sentence, and it keeps listening until you press Ctrl again.</p>
+      </div>
+      <div class="feature">
+        <div class="ico" style="background:linear-gradient(145deg,#ff9f0a,#ff375f)"><svg viewBox="0 0 24 24"><path d="M12 1 3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5l-9-4Zm-1.1 15.4-3.6-3.6 1.4-1.4 2.2 2.2 4.6-4.6 1.4 1.4-6 6Z"/></svg></div>
+        <h3>Many languages</h3>
+        <p>Vietnamese, English, Chinese, Japanese, Korean, French, German, Spanish and Russian, with auto-detect.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>How it works</h2>
+    <p class="sub">Install, press Ctrl, speak.</p>
+    <div class="steps">
+      <div class="step"><span class="num">1</span><div><b>Download and install</b><span>Run Voicin-Setup.exe. It takes a few seconds.</span></div></div>
+      <div class="step"><span class="num">2</span><div><b>Try it free for 4 hours</b><span>Full features during the trial, no sign-up.</span></div></div>
+      <div class="step"><span class="num">3</span><div><b>Press Ctrl to start</b><span>Press and release Ctrl to start listening; press again to stop.</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="buy">
+  <div class="wrap">
+    <h2>Lifetime license</h2>
+    <p class="sub">One payment, forever. Pay in USDT, then paste your transaction hash to get your key.</p>
+    <div class="price-card">
+      <div class="price">$10 <small>USDT</small></div>
+      <div class="price-note">One-time payment · Lifetime access · 1 license per device</div>
+
+      <div class="seg" id="net">
+        <button type="button" class="on" data-net="bsc">BSC (BEP-20)</button>
+        <button type="button" data-net="eth">Ethereum (ERC-20)</button>
+      </div>
+      <div class="wallet"><code id="wallet">Loading wallet…</code><button class="copy" id="copy" type="button">Copy</button></div>
+      <input id="tx" placeholder="Paste your transaction hash (0x…)" spellcheck="false" autocomplete="off">
+      <button class="btn full" id="claim" type="button">Verify payment &amp; get my key</button>
+      <div class="msg" id="msg"></div>
+      <div class="keybox" id="keybox">
+        <small>Your license key</small>
+        <div class="k" id="key"></div>
+        <button class="copy" id="copyKey" type="button">Copy key</button>
+        <div><small>Open Voicin → Unlock → paste the key.</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <h2>FAQ</h2>
+    <p class="sub">&nbsp;</p>
+    <div class="steps">
+      <div class="step"><div><b>Is there a subscription?</b><span>No. $10 once, lifetime access.</span></div></div>
+      <div class="step"><div><b>Which networks can I pay on?</b><span>USDT on BSC (BEP-20) or Ethereum (ERC-20). Send exactly $10 USDT to the wallet shown.</span></div></div>
+      <div class="step"><div><b>Can I use one key on several computers?</b><span>A key is tied to the first computer that activates it.</span></div></div>
+      <div class="step"><div><b>Does it need internet?</b><span>Yes. Speech recognition uses Google's speech service.</span></div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">Voicin · Windows 10/11 · <a href="#buy">Buy</a> · <a href="/downloads/Voicin-Setup.exe" download>Download</a></div>
+</footer>
+
+<script>
+(function () {
+  // Live purchase info from the API (wallet and price)
+  var walletEl = document.getElementById("wallet");
+  var network = "bsc";
+  fetch("/api/info").then(function (r) { return r.json(); }).then(function (info) {
+    walletEl.textContent = info.wallet;
+  }).catch(function () { walletEl.textContent = "Wallet unavailable, try again later"; });
+
+  document.querySelectorAll("#net button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      network = b.dataset.net;
+      document.querySelectorAll("#net button").forEach(function (x) { x.classList.toggle("on", x === b); });
+    });
+  });
+
+  document.getElementById("copy").addEventListener("click", function () {
+    navigator.clipboard && navigator.clipboard.writeText(walletEl.textContent);
+    say("Wallet address copied.", "");
+  });
+  document.getElementById("copyKey").addEventListener("click", function () {
+    navigator.clipboard && navigator.clipboard.writeText(document.getElementById("key").textContent);
+  });
+
+  function say(text, cls) {
+    var m = document.getElementById("msg");
+    m.textContent = text;
+    m.className = "msg " + (cls || "");
+  }
+
+  document.getElementById("claim").addEventListener("click", function () {
+    var tx = document.getElementById("tx").value.trim();
+    if (!/^0x[0-9a-fA-F]{64}$/.test(tx)) { say("Enter a valid transaction hash (0x + 64 characters).", "err"); return; }
+    var btn = this;
+    btn.disabled = true;
+    say("Checking the blockchain… this can take up to a minute.", "");
+    fetch("/api/claim", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ network: network, tx_hash: tx })
+    }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (res) {
+        if (res.ok && res.j.key) {
+          document.getElementById("key").textContent = res.j.key;
+          document.getElementById("keybox").classList.add("show");
+          say("Payment confirmed. Your key is below.", "");
+        } else {
+          say(res.j.error || "Something went wrong.", "err");
+        }
+      })
+      .catch(function () { say("Network error. Please try again.", "err"); })
+      .finally(function () { btn.disabled = false; });
+  });
+
+  // Animated waveform in the hero demo
+  var canvas = document.getElementById("wave"), ctx = canvas.getContext("2d");
+  var BARS = 36, levels = new Array(BARS).fill(0), last = 0;
+  function draw(t) {
+    var dpr = window.devicePixelRatio || 1, w = canvas.clientWidth, h = canvas.clientHeight;
+    if (canvas.width !== Math.round(w * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    if (t - last > 70) {
+      var v = 0.2 + 0.8 * Math.abs(Math.sin(t / 380) * Math.cos(t / 910));
+      levels.push(v * (0.5 + Math.random() * 0.5)); levels.shift(); last = t;
+    }
+    var gap = 5, bw = (w - gap * (BARS - 1)) / BARS;
+    var g = ctx.createLinearGradient(0, 0, w, 0);
+    g.addColorStop(0, "#5ac8fa"); g.addColorStop(0.5, "#0071e3"); g.addColorStop(1, "#ff2d55");
+    ctx.fillStyle = g;
+    for (var i = 0; i < BARS; i++) {
+      var bh = Math.max(6, levels[i] * h * 0.92), x = i * (bw + gap), y = (h - bh) / 2, r = Math.min(bw / 2, bh / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y); ctx.arcTo(x + bw, y, x + bw, y + bh, r); ctx.arcTo(x + bw, y + bh, x, y + bh, r);
+      ctx.arcTo(x, y + bh, x, y, r); ctx.arcTo(x, y, x + bw, y, r); ctx.closePath(); ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+
+  // Typewriter demo: the sentence appears as if typed at the cursor
+  var phrases = ["Hi team, the report is ready for review.", "Let's meet at 3 pm tomorrow to go over it.", "Thanks, talk soon!"];
+  var typed = document.getElementById("typed"), p = 0, c = 0;
+  function tick() {
+    var s = phrases[p];
+    if (c <= s.length) {
+      typed.innerHTML = s.slice(0, c).replace(/</g, "&lt;") + '<span class="caret"></span>';
+      c++; setTimeout(tick, 45);
+    } else {
+      setTimeout(function () { c = 0; p = (p + 1) % phrases.length; tick(); }, 2200);
+    }
+  }
+  tick();
+})();
+</script>
+</body>
+</html>

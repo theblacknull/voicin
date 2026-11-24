@@ -1,5 +1,5 @@
-// Bản quyền: dùng thử 4 giờ, sau đó cần license key (mua trọn đời bằng USDT).
-// Key và ví nhận tiền nằm trên license server (license-server/), app chỉ gọi API.
+// Licensing: 4-hour free trial, then a license key is required (lifetime purchase in USDT).
+// Keys and the receiving wallet live on the license server (license-server/); the app only calls its API.
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::os::windows::process::CommandExt;
@@ -51,7 +51,7 @@ fn save(s: &Saved) {
     }
 }
 
-/// Đọc trạng thái; lần đầu chạy thì ghi mốc bắt đầu dùng thử
+/// Reads the saved state; on the first run, records when the trial started
 fn load_or_init() -> Saved {
     let mut s = load();
     if s.first_run == 0 {
@@ -78,7 +78,7 @@ pub fn can_use() -> bool {
     status().state != "trial_expired"
 }
 
-/// Mã định danh máy (MachineGuid của Windows), dùng để gắn key với một máy
+/// Device identifier (Windows MachineGuid), used to bind a key to one machine
 fn machine_id() -> String {
     let out = std::process::Command::new("reg")
         .args(["query", "HKLM\\SOFTWARE\\Microsoft\\Cryptography", "/v", "MachineGuid"])
@@ -97,7 +97,7 @@ fn agent() -> ureq::Agent {
     ureq::AgentBuilder::new().timeout(Duration::from_secs(20)).build()
 }
 
-/// Trả về (mã HTTP, JSON). Lỗi mạng trả về Err.
+/// Returns (HTTP status, JSON body). Network failures return Err.
 fn post(path: &str, body: Value) -> Result<(u16, Value), String> {
     let url = format!("{}{}", server(), path);
     match agent().post(&url).send_json(body) {
@@ -114,13 +114,13 @@ fn err_text(v: &Value) -> String {
     v.get("error").and_then(|e| e.as_str()).unwrap_or("request failed").to_string()
 }
 
-/// Thông tin mua hàng từ server: giá, ví nhận, mạng hỗ trợ
+/// Purchase info from the server: price, receiving wallet, supported networks
 pub fn info() -> Result<Value, String> {
     let url = format!("{}/api/info", server());
     agent().get(&url).call().map_err(|e| e.to_string())?.into_json().map_err(|e| e.to_string())
 }
 
-/// Kích hoạt bằng key người dùng nhập
+/// Activates with a key entered by the user
 pub fn activate(key: &str) -> Result<(), String> {
     let (code, v) = post("/api/activate", json!({ "key": key, "machine": machine_id() }))?;
     if code == 200 {
@@ -134,7 +134,7 @@ pub fn activate(key: &str) -> Result<(), String> {
     }
 }
 
-/// Mua: gửi hash giao dịch USDT, server xác minh trên blockchain rồi trả về key
+/// Purchase: sends the USDT transaction hash; the server verifies it on-chain and returns a key
 pub fn claim(network: &str, tx_hash: &str) -> Result<(), String> {
     let (code, v) = post("/api/claim", json!({ "network": network, "tx_hash": tx_hash.trim() }))?;
     if code != 200 {
@@ -144,7 +144,7 @@ pub fn claim(network: &str, tx_hash: &str) -> Result<(), String> {
     activate(&key)
 }
 
-/// Khi mở app: kiểm tra lại key với server (chống dùng chung). Mất mạng thì vẫn cho dùng.
+/// On startup: re-check the key with the server (prevents sharing). If offline, keep the app usable.
 pub fn validate_on_start() {
     let s = load();
     let Some(key) = s.key.clone() else { return };
@@ -155,11 +155,11 @@ pub fn validate_on_start() {
             save(&s);
         }
         Ok((403, _)) | Ok((404, _)) => {
-            // Key bị thu hồi hoặc đang dùng trên máy khác: đưa về trạng thái chưa kích hoạt
+            // Key revoked or in use on another machine: return to the unlicensed state
             let mut s = s;
             s.key = None;
             save(&s);
         }
-        _ => {} // lỗi mạng: giữ nguyên
+        _ => {} // network error: keep the current state
     }
 }

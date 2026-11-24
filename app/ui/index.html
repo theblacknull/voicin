@@ -70,7 +70,7 @@
   .trial { font-size: 11px; color: var(--muted); text-align: center; }
   .trial b { color: var(--orange); font-weight: 600; }
 
-  /* Màn hình khóa / mua bản quyền */
+  /* License lock / purchase screen */
   .sheet { position: absolute; inset: 0; background: var(--bg); padding: 12px; display: none; flex-direction: column;
     gap: 10px; overflow-y: auto; z-index: 10; }
   body.locked .sheet { display: flex; }
@@ -127,7 +127,7 @@
 
   <div class="trial" id="trial"></div>
 
-  <!-- Màn hình khóa: hết dùng thử hoặc bấm "Unlock" -->
+  <!-- Lock screen: shown when the trial ends or the user presses Unlock -->
   <section class="sheet" id="sheet">
     <h2>Unlock Voicin</h2>
     <div class="sub" id="trialEnded">Your 4-hour free trial has ended.</div>
@@ -179,7 +179,7 @@
     return core ? core.invoke(cmd, args || {}) : Promise.reject("no backend");
   }
 
-  // Danh sách ngôn ngữ: hiện 3 mục, cuộn để xem thêm
+  // Language list: shows 3 items; scroll for more
   LANGS.forEach(function (l) {
     var d = document.createElement("div");
     d.className = "opt";
@@ -282,7 +282,7 @@
       .finally(function () { busy(btn, false); });
   });
 
-  // Sóng âm thanh: thanh bo tròn, gradient xanh sang hồng
+  // Audio waveform: rounded bars, blue-to-pink gradient
   var BARS = 24, levels = new Array(BARS).fill(0), current = 0, lastPush = 0, listening = false;
   function draw(t) {
     var dpr = window.devicePixelRatio || 1;

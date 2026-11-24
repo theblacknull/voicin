@@ -1,12 +1,7 @@
 {
-  "name": "voicin",
+  "name": "voicin-license",
   "version": "1.0.0",
   "private": true,
-  "description": "Voicin - Tauri v2",
-  "scripts": {
-    "build": "tauri build"
-  },
-  "devDependencies": {
-    "@tauri-apps/cli": "^2.12.6"
-  }
+  "type": "module",
+  "description": "Voicin license server (Vercel Functions + Upstash Redis)"
 }

@@ -1,10 +1,10 @@
-// Google Speech (endpoint web không chính thức, cùng cách làm với bản dịch trong ../src-tauri/src/google.rs).
-// Mỗi câu được gửi song song cho nhiều ngôn ngữ; chọn kết quả đúng chữ viết và tin cậy nhất.
+// Google Speech (unofficial web endpoint, the same approach as the translation code in the translator project).
+// Each utterance is sent in parallel for several languages; the result with the correct script and highest confidence wins.
 use serde_json::Value;
 use std::time::Duration;
 
 const STT_URL: &str = "https://www.google.com/speech-api/v2/recognize";
-// Khóa công khai của chức năng nhận dạng giọng nói Chromium
+// Public key used by Chromium's speech recognition feature
 const STT_KEY: &str = "AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw";
 const UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
@@ -16,7 +16,7 @@ fn agent() -> ureq::Agent {
         .build()
 }
 
-/// Nhận dạng một ngôn ngữ. PCM là mono 16 kHz, 16-bit little-endian. Trả về (chữ, độ tin cậy).
+/// Recognizes one language. PCM is mono 16 kHz, 16-bit little-endian. Returns (text, confidence).
 pub fn stt(pcm: &[u8], lang: &str) -> Result<(String, f64), String> {
     let url = format!("{STT_URL}?output=json&lang={lang}&key={STT_KEY}&client=chromium");
     let resp = agent()
@@ -24,7 +24,7 @@ pub fn stt(pcm: &[u8], lang: &str) -> Result<(String, f64), String> {
         .set("User-Agent", UA)
         .set("Content-Type", "audio/l16; rate=16000")
         .send_bytes(pcm)
-        .map_err(|e| format!("Google STT lỗi: {e}"))?;
+        .map_err(|e| format!("Google STT error: {e}"))?;
     let body = resp.into_string().map_err(|e| e.to_string())?;
     for line in body.lines() {
         let Ok(v) = serde_json::from_str::<Value>(line) else { continue };
@@ -37,7 +37,7 @@ pub fn stt(pcm: &[u8], lang: &str) -> Result<(String, f64), String> {
     Ok((String::new(), 0.0))
 }
 
-/// Kết quả có đúng chữ viết của ngôn ngữ không? (độ tin cậy giữa các ngôn ngữ không so sánh được)
+/// Does the text use the writing system of the language? (confidence scores are not comparable across languages)
 fn script_fits(text: &str, lang: &str) -> bool {
     let letters: Vec<char> = text.chars().filter(|c| c.is_alphabetic()).collect();
     if letters.is_empty() {
@@ -66,12 +66,12 @@ fn script_fits(text: &str, lang: &str) -> bool {
     } else if l.starts_with("vi") {
         viet > 0 && !major(cyr)
     } else {
-        // Các ngôn ngữ Latin khác: không có chữ Cyrillic/CJK/Hangul/Thái, không có dấu tiếng Việt
+        // Other Latin-script languages: no Cyrillic/CJK/Hangul/Thai, and no Vietnamese diacritics
         !major(cyr) && !major(han) && !major(kana) && !major(hangul) && !major(thai) && viet == 0
     }
 }
 
-/// Nhận dạng với nhiều ngôn ngữ ứng viên, song song. Ưu tiên kết quả đúng chữ viết và tin cậy nhất.
+/// Recognizes with several candidate languages in parallel. Prefers the result with the correct script and highest confidence.
 pub fn stt_best(pcm: &[u8], langs: &[String]) -> Result<String, String> {
     let results: Vec<(String, Result<(String, f64), String>)> = std::thread::scope(|sc| {
         let handles: Vec<_> = langs
@@ -83,7 +83,7 @@ pub fn stt_best(pcm: &[u8], langs: &[String]) -> Result<String, String> {
             .collect();
         handles
             .into_iter()
-            .map(|(l, h)| (l, h.join().unwrap_or_else(|_| Err("lỗi nội bộ".into()))))
+            .map(|(l, h)| (l, h.join().unwrap_or_else(|_| Err("internal error".into()))))
             .collect()
     });
 
