@@ -19,7 +19,7 @@ Deployed on **Vercel** from this repository:
 ## Deploy on Vercel
 
 1. Import this GitHub repository in Vercel (Framework preset: **Other**, root directory: `/`).
-2. **Storage**: add **Upstash Redis**. It creates `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`.
+2. **Storage**: add **Upstash Redis**. It creates `REDIS_URL`.
 3. **Settings → Environment Variables**: add `TREASURY_EVM`, `PRICE_USDT=10` and `LICENSE_KEYS` (comma-separated, from your local `.env`).
 4. Deploy. The app reads the license server URL from `VOICIN_LICENSE_URL`.
 

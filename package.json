@@ -3,5 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Voicin license server (Vercel Functions + Upstash Redis)"
+  "description": "Voicin license server (Vercel Functions + Upstash Redis)",
+  "dependencies": {
+    "redis": "^5.12.4"
+  }
 }
