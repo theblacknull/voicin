@@ -6,104 +6,99 @@
 <title>Voicin</title>
 <style>
   :root {
-    --bg: #000;
-    --card: #1c1c1e;
-    --sep: rgba(255,255,255,.08);
-    --fg: #f5f5f7;
-    --muted: #8e8e93;
-    --blue: #0a84ff;
-    --purple: #bf5af2;
-    --green: #30d158;
-    --red: #ff453a;
+    --bg: #f2f2f7; --card: #ffffff; --sep: rgba(60,60,67,.12);
+    --fg: #1c1c1e; --muted: #8a8a8e;
+    --blue: #007aff; --indigo: #5856d6; --pink: #ff2d55; --green: #34c759; --red: #ff3b30;
   }
-  @media (prefers-color-scheme: light) {
-    :root:not([data-theme="dark"]) {
-      --bg: #f2f2f7; --card: #ffffff; --sep: rgba(0,0,0,.08);
-      --fg: #1c1c1e; --muted: #6e6e73;
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #000; --card: #1c1c1e; --sep: rgba(84,84,88,.6);
+      --fg: #f2f2f7; --muted: #8e8e93;
     }
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
     font-family: -apple-system, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
-    -webkit-font-smoothing: antialiased; user-select: none; }
-  body { display: flex; flex-direction: column; padding: 14px; gap: 12px; }
+    -webkit-font-smoothing: antialiased; user-select: none; overflow: hidden; }
+  body { display: flex; flex-direction: column; padding: 12px; gap: 10px; }
 
-  .card { background: var(--card); border-radius: 20px; }
+  /* Đầu: biểu tượng app + tên + trạng thái */
+  header { display: flex; align-items: center; gap: 10px; }
+  .app-icon { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+    background: linear-gradient(145deg, #5ac8fa, #007aff 55%, #5856d6); box-shadow: 0 2px 6px rgba(0,122,255,.35); }
+  .app-icon svg { width: 17px; height: 17px; fill: #fff; }
+  .title { font-size: 15px; font-weight: 700; flex: 1; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600;
+    color: var(--muted); background: rgba(142,142,147,.16); padding: 4px 9px; border-radius: 999px; transition: all .25s; }
+  .pill i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); transition: background .25s, box-shadow .25s; }
+  body.on .pill { color: #1a8f3c; background: rgba(52,199,89,.18); }
+  body.on .pill i { background: var(--green); box-shadow: 0 0 6px var(--green); }
 
-  /* Đầu: tên app và trạng thái */
-  header { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px 0; }
-  .title { font-size: 15px; font-weight: 600; letter-spacing: .2px; }
-  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500;
-    color: var(--muted); background: rgba(127,127,127,.14); padding: 5px 10px; border-radius: 999px;
-    transition: color .25s, background .25s; }
-  .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); transition: background .25s, box-shadow .25s; }
-  body.on .pill { color: var(--green); background: rgba(48,209,88,.14); }
-  body.on .pill .dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
-
-  /* Sóng âm thanh: chủ đạo, ở giữa */
-  .wave-card { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 18px 14px 14px; min-height: 0; position: relative; overflow: hidden; }
-  canvas { width: 100%; height: 120px; display: block; }
-  .transcript { margin-top: 10px; min-height: 40px; width: 100%; text-align: center; font-size: 15px;
-    line-height: 1.35; color: var(--fg); opacity: 0; transform: translateY(4px);
-    transition: opacity .35s, transform .35s; overflow: hidden; display: -webkit-box;
-    -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  /* Thẻ sóng âm thanh: chủ đạo, ở giữa */
+  .card { background: var(--card); border-radius: 18px; }
+  .wave-card { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 10px 12px; position: relative; }
+  canvas { width: 100%; height: 74px; display: block; }
+  .transcript { margin-top: 6px; width: 100%; text-align: center; font-size: 13px; line-height: 1.35;
+    color: var(--fg); opacity: 0; transform: translateY(3px); transition: opacity .3s, transform .3s;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 18px; }
   .transcript.show { opacity: 1; transform: none; }
-  .placeholder { margin-top: 10px; font-size: 13px; color: var(--muted); text-align: center; }
-  body.on .placeholder { color: var(--fg); opacity: .7; }
+  .hint { margin-top: 4px; font-size: 12px; color: var(--muted); }
+  body.on .hint { display: none; }
 
-  /* Hàng cài đặt: ngôn ngữ (kiểu iOS: danh sách có viền mờ) */
-  .settings { padding: 4px 0; }
-  .row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; font-size: 14px; }
-  .row + .row { border-top: 1px solid var(--sep); }
-  .row label { color: var(--fg); }
-  select { appearance: none; -webkit-appearance: none; background: transparent; color: var(--blue);
-    border: 0; font: inherit; font-size: 14px; font-weight: 500; padding: 2px 18px 2px 4px; cursor: pointer;
-    background-image: linear-gradient(45deg, transparent 50%, var(--blue) 50%), linear-gradient(135deg, var(--blue) 50%, transparent 50%);
-    background-position: calc(100% - 9px) 50%, calc(100% - 5px) 50%; background-size: 4px 4px; background-repeat: no-repeat;
-    outline: none; direction: rtl; text-align: right; }
-  select option { direction: ltr; color: #000; }
+  /* Hàng ngôn ngữ (kiểu iOS) */
+  .settings { position: relative; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer; width: 100%;
+    background: none; border: 0; color: var(--fg); font: inherit; font-size: 13px; text-align: left; }
+  .badge { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center;
+    background: linear-gradient(145deg, #ff9f0a, #ff375f); flex: none; }
+  .badge svg { width: 14px; height: 14px; fill: #fff; }
+  .row .label { flex: 1; }
+  .row .value { color: var(--blue); font-weight: 500; }
+  .row .chev { width: 10px; height: 10px; fill: var(--muted); transition: transform .2s; }
+  body.open .row .chev { transform: rotate(180deg); }
 
-  /* Chú thích phím tắt, dưới đáy */
-  footer { text-align: center; font-size: 11px; color: var(--muted); line-height: 1.5; padding: 0 6px 2px; }
-  kbd { font-family: inherit; font-size: 11px; font-weight: 600; color: var(--fg); background: rgba(127,127,127,.18);
-    border-radius: 5px; padding: 1px 6px; }
+  /* Danh sách ngôn ngữ: hiện 3 mục, cuộn để xem thêm, mở lên trên */
+  .menu { position: absolute; left: 0; right: 0; bottom: calc(100% + 6px); background: var(--card);
+    border-radius: 14px; box-shadow: 0 8px 28px rgba(0,0,0,.18); max-height: 3 * 34px + 8px; overflow-y: auto;
+    padding: 4px; display: none; z-index: 5; }
+  body.open .menu { display: block; }
+  .opt { display: flex; align-items: center; height: 34px; padding: 0 10px; border-radius: 9px; font-size: 13px;
+    cursor: pointer; }
+  .opt:hover { background: rgba(0,122,255,.1); }
+  .opt .tick { margin-left: auto; width: 14px; height: 14px; fill: var(--blue); visibility: hidden; }
+  .opt.sel { color: var(--blue); font-weight: 600; }
+  .opt.sel .tick { visibility: visible; }
+  .menu::-webkit-scrollbar { width: 4px; }
+  .menu::-webkit-scrollbar-thumb { background: rgba(127,127,127,.4); border-radius: 4px; }
 </style>
 </head>
 <body id="body">
   <header>
+    <div class="app-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"/></svg>
+    </div>
     <span class="title">Voicin</span>
-    <span class="pill"><span class="dot"></span><span id="state">Đã tắt</span></span>
+    <span class="pill"><i></i><span id="state">Đã tắt</span></span>
   </header>
 
   <section class="card wave-card">
-    <canvas id="wave" width="600" height="240"></canvas>
-    <div class="placeholder" id="placeholder">Nhấn <kbd>Ctrl</kbd> để bắt đầu nói</div>
+    <canvas id="wave" width="600" height="160"></canvas>
+    <div class="hint" id="hint">Nhấn Ctrl để bắt đầu nói</div>
     <div class="transcript" id="transcript"></div>
   </section>
 
-  <section class="card settings">
-    <div class="row">
-      <label for="lang">Ngôn ngữ</label>
-      <select id="lang">
-        <option value="vi-VN" selected>Tiếng Việt</option>
-        <option value="auto">Tự động nhận diện</option>
-        <option value="en-US">English</option>
-        <option value="zh-CN">中文</option>
-        <option value="ja-JP">日本語</option>
-        <option value="ko-KR">한국어</option>
-        <option value="fr-FR">Français</option>
-        <option value="de-DE">Deutsch</option>
-        <option value="es-ES">Español</option>
-        <option value="ru-RU">Русский</option>
-      </select>
-    </div>
+  <section class="card settings" id="settings">
+    <div class="menu" id="menu"></div>
+    <button class="row" id="toggle" type="button">
+      <span class="badge">
+        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm6.9 6h-2.9a15.6 15.6 0 0 0-1.3-3.6A8 8 0 0 1 18.9 8ZM12 4c.8 1.2 1.5 2.5 1.9 4h-3.8c.4-1.5 1.1-2.8 1.9-4ZM4.3 14a8.2 8.2 0 0 1 0-4h3.4a16.5 16.5 0 0 0 0 4H4.3Zm.8 2h2.9c.3 1.3.8 2.5 1.3 3.6A8 8 0 0 1 5.1 16ZM8 8H5.1a8 8 0 0 1 4.2-3.6C8.8 5.5 8.3 6.7 8 8Zm4 12c-.8-1.2-1.5-2.5-1.9-4h3.8c-.4 1.5-1.1 2.8-1.9 4Zm2.3-6H9.7a14.7 14.7 0 0 1 0-4h4.6a14.7 14.7 0 0 1 0 4Zm.3 5.6c.5-1.1 1-2.3 1.3-3.6h2.9a8 8 0 0 1-4.2 3.6Zm1.7-5.6a16.5 16.5 0 0 0 0-4h3.4a8.2 8.2 0 0 1 0 4h-3.4Z"/></svg>
+      </span>
+      <span class="label">Ngôn ngữ</span>
+      <span class="value" id="value">Tiếng Việt</span>
+      <svg class="chev" viewBox="0 0 10 10"><path d="M1 3l4 4 4-4"/></svg>
+    </button>
   </section>
-
-  <footer>
-    <kbd>Ctrl</kbd> bật/tắt nghe · Chữ được gõ vào vị trí con trỏ<br>
-    Ctrl+C, Ctrl+V vẫn hoạt động bình thường
-  </footer>
 
 <script>
 (function () {
@@ -111,39 +106,78 @@
   var stateEl = document.getElementById("state");
   var canvas = document.getElementById("wave");
   var ctx = canvas.getContext("2d");
-  var placeholder = document.getElementById("placeholder");
+  var hint = document.getElementById("hint");
   var transcript = document.getElementById("transcript");
-  var langSel = document.getElementById("lang");
+  var toggle = document.getElementById("toggle");
+  var menu = document.getElementById("menu");
+  var valueEl = document.getElementById("value");
 
-  var BARS = 28;
-  var levels = new Array(BARS).fill(0);   // lịch sử mức âm thanh (mới nhất ở cuối)
-  var current = 0;                        // mức hiện tại nhận từ backend
-  var listening = false;
-  var hideTimer = null;
+  var LANGS = [
+    ["vi-VN", "Tiếng Việt"], ["auto", "Tự động nhận diện"], ["en-US", "English"],
+    ["zh-CN", "中文"], ["ja-JP", "日本語"], ["ko-KR", "한국어"], ["fr-FR", "Français"],
+    ["de-DE", "Deutsch"], ["es-ES", "Español"], ["ru-RU", "Русский"]
+  ];
+  var TICK = '<svg class="tick" viewBox="0 0 14 14"><path d="M2 7.5l3.2 3L12 3.5" stroke="#007aff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  var BARS = 24;
+  var levels = new Array(BARS).fill(0);
+  var current = 0, lastPush = 0, listening = false, hideTimer = null;
+  var selected = "vi-VN";
 
   function invoke(cmd, args) {
     var core = window.__TAURI__ && window.__TAURI__.core;
     if (core) core.invoke(cmd, args || {});
   }
 
+  // Tạo danh sách; mỗi mục hiện đầy đủ, người dùng cuộn để xem thêm
+  LANGS.forEach(function (l) {
+    var d = document.createElement("div");
+    d.className = "opt";
+    d.dataset.code = l[0];
+    d.innerHTML = '<span>' + l[1] + '</span>' + TICK;
+    d.addEventListener("click", function (e) {
+      e.stopPropagation();
+      choose(l[0], l[1]);
+    });
+    menu.appendChild(d);
+  });
+
+  function choose(code, name) {
+    selected = code;
+    valueEl.textContent = name;
+    Array.prototype.forEach.call(menu.children, function (c) {
+      c.classList.toggle("sel", c.dataset.code === code);
+    });
+    body.classList.remove("open");
+    invoke("set_language", { code: code });
+  }
+  choose("vi-VN", "Tiếng Việt");
+
+  toggle.addEventListener("click", function (e) {
+    e.stopPropagation();
+    body.classList.toggle("open");
+    if (body.classList.contains("open")) {
+      var sel = menu.querySelector(".sel");
+      if (sel) sel.scrollIntoView({ block: "nearest" });
+    }
+  });
+  document.addEventListener("click", function () { body.classList.remove("open"); });
+
   function setListening(on) {
     listening = on;
     body.classList.toggle("on", on);
     stateEl.textContent = on ? "Đang nghe" : "Đã tắt";
-    placeholder.style.display = on && !transcript.textContent ? "block" : (on ? "none" : "block");
     if (!on) current = 0;
   }
 
   function showText(t) {
     transcript.textContent = t;
     transcript.classList.add("show");
-    placeholder.style.display = "none";
     clearTimeout(hideTimer);
     hideTimer = setTimeout(function () { transcript.classList.remove("show"); }, 6000);
   }
 
-  // Vẽ sóng: các thanh bo tròn, đối xứng quanh trục giữa, màu chuyển từ xanh sang tím
-  var lastPush = 0;
+  // Sóng: thanh bo tròn, đối xứng quanh trục giữa, gradient cầu vồng kiểu iOS
   function draw(t) {
     var dpr = window.devicePixelRatio || 1;
     var w = canvas.clientWidth, h = canvas.clientHeight;
@@ -151,43 +185,36 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    // đẩy mẫu mới khoảng 60ms một lần để sóng chạy đều
-    if (t - lastPush > 60) {
-      levels.push(current); levels.shift(); lastPush = t;
-    }
+    if (t - lastPush > 60) { levels.push(current); levels.shift(); lastPush = t; }
 
-    var gap = 5, barW = (w - gap * (BARS - 1)) / BARS;
+    var gap = 4, barW = (w - gap * (BARS - 1)) / BARS;
     var grad = ctx.createLinearGradient(0, 0, w, 0);
-    grad.addColorStop(0, "#0a84ff");
-    grad.addColorStop(1, "#bf5af2");
+    grad.addColorStop(0, "#5ac8fa");
+    grad.addColorStop(0.5, "#007aff");
+    grad.addColorStop(1, "#ff2d55");
     ctx.fillStyle = grad;
 
     for (var i = 0; i < BARS; i++) {
-      var v = levels[i];
-      // khi nghỉ, thanh vẫn thở nhẹ để giao diện không chết
-      var idle = listening ? 0.04 : 0.03;
-      var breathe = (Math.sin(t / 500 + i * 0.6) + 1) * 0.5 * idle;
-      var amp = Math.max(v, breathe);
-      var bh = Math.max(4, amp * h * 0.9);
+      var breathe = (Math.sin(t / 450 + i * 0.55) + 1) * 0.5 * (listening ? 0.08 : 0.05);
+      var amp = Math.max(levels[i], breathe);
+      var bh = Math.max(4, amp * h * 0.95);
       var x = i * (barW + gap), y = (h - bh) / 2;
-      roundRect(ctx, x, y, barW, bh, barW / 2);
+      roundRect(x, y, barW, bh, barW / 2);
       ctx.fill();
     }
     requestAnimationFrame(draw);
   }
 
-  function roundRect(c, x, y, w, h, r) {
+  function roundRect(x, y, w, h, r) {
     r = Math.min(r, h / 2, w / 2);
-    c.beginPath();
-    c.moveTo(x + r, y);
-    c.arcTo(x + w, y, x + w, y + h, r);
-    c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r);
-    c.arcTo(x, y, x + w, y, r);
-    c.closePath();
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
   }
-
-  langSel.addEventListener("change", function () { invoke("set_language", { code: langSel.value }); });
 
   var ev = window.__TAURI__ && window.__TAURI__.event;
   if (ev) {
