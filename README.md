@@ -4,7 +4,7 @@ Website, license service and download page for **Voicin**, a voice-typing app fo
 
 Deployed on **Vercel** from this repository:
 
-- `public/`: landing page and downloads (`public/downloads/Voicin-Setup.exe`)
+- `public/`: landing page and version info. The installer is hosted in the theblacknull/voicin-app repo
 - `api/` + `lib/`: license API (Vercel Functions) with Upstash Redis
 - `app/`: source code of the Windows app (Tauri v2)
 
@@ -27,4 +27,4 @@ Deployed on **Vercel** from this repository:
 
 - `.env` holds the key list. It is git-ignored; enter its values only in Vercel.
 - To add keys, update `LICENSE_KEYS` in Vercel and redeploy.
-- Build the Windows app from `app/` (see `app/README.md`), then copy the installer to `public/downloads/Voicin-Setup.exe`.
+- Build the Windows app in its own repo, then upload `Voicin-Setup.exe` to theblacknull/voicin-app and update `version.json`.
