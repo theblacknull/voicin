@@ -6,6 +6,7 @@
 mod asr;
 mod audio;
 mod keys;
+mod license;
 mod typer;
 
 use std::collections::VecDeque;
@@ -98,9 +99,17 @@ fn main() {
     println!("[Voicin] Sẵn sàng. Nhấn phím kích hoạt (mã 0x{trigger:02X}) để bật/tắt nghe.");
     // Stream micro phải sống đến khi thoát app (giữ trong biến `stream`)
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![set_language])
+        .invoke_handler(tauri::generate_handler![
+            set_language,
+            license_status,
+            license_info,
+            license_activate,
+            license_claim
+        ])
         .setup(|app| {
             let _ = APP.set(app.handle().clone());
+            thread::spawn(license::validate_on_start);
+            license_ticker();
             Ok(())
         })
         .run(tauri::generate_context!())
@@ -108,8 +117,49 @@ fn main() {
     drop(stream);
 }
 
+/// Lệnh giao diện: trạng thái bản quyền
+#[tauri::command]
+fn license_status() -> license::Status {
+    license::status()
+}
+
+#[tauri::command]
+async fn license_info() -> Result<serde_json::Value, String> {
+    tauri::async_runtime::spawn_blocking(license::info).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn license_activate(key: String) -> Result<license::Status, String> {
+    tauri::async_runtime::spawn_blocking(move || license::activate(&key)).await.map_err(|e| e.to_string())??;
+    Ok(license::status())
+}
+
+#[tauri::command]
+async fn license_claim(network: String, tx_hash: String) -> Result<license::Status, String> {
+    tauri::async_runtime::spawn_blocking(move || license::claim(&network, &tx_hash))
+        .await
+        .map_err(|e| e.to_string())??;
+    Ok(license::status())
+}
+
+/// Mỗi giây: gửi trạng thái bản quyền tới giao diện; hết dùng thử thì tự tắt nghe
+fn license_ticker() {
+    thread::spawn(|| loop {
+        let st = license::status();
+        if st.state == "trial_expired" && LISTENING.swap(false, Ordering::SeqCst) {
+            emit("listening", false);
+        }
+        emit("license", st);
+        thread::sleep(Duration::from_secs(1));
+    });
+}
+
 /// Đảo trạng thái nghe mỗi lần nhấn phím (không tính lúc giữ phím lặp)
 fn toggle() {
+    if !LISTENING.load(Ordering::SeqCst) && !license::can_use() {
+        emit("locked", ());
+        return;
+    }
     let was_on = LISTENING.fetch_xor(true, Ordering::SeqCst);
     emit("listening", !was_on);
     if was_on {

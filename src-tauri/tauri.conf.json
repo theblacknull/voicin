@@ -14,7 +14,7 @@
         "title": "Voicin",
         "url": "index.html",
         "width": 300,
-        "height": 250,
+        "height": 380,
         "resizable": false,
         "maximizable": false,
         "alwaysOnTop": true,
