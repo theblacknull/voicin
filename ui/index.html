@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voicin</title>
+<style>
+  :root {
+    --bg: #000;
+    --card: #1c1c1e;
+    --sep: rgba(255,255,255,.08);
+    --fg: #f5f5f7;
+    --muted: #8e8e93;
+    --blue: #0a84ff;
+    --purple: #bf5af2;
+    --green: #30d158;
+    --red: #ff453a;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f2f2f7; --card: #ffffff; --sep: rgba(0,0,0,.08);
+      --fg: #1c1c1e; --muted: #6e6e73;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; user-select: none; }
+  body { display: flex; flex-direction: column; padding: 14px; gap: 12px; }
+
+  .card { background: var(--card); border-radius: 20px; }
+
+  /* Đầu: tên app và trạng thái */
+  header { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px 0; }
+  .title { font-size: 15px; font-weight: 600; letter-spacing: .2px; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500;
+    color: var(--muted); background: rgba(127,127,127,.14); padding: 5px 10px; border-radius: 999px;
+    transition: color .25s, background .25s; }
+  .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); transition: background .25s, box-shadow .25s; }
+  body.on .pill { color: var(--green); background: rgba(48,209,88,.14); }
+  body.on .pill .dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+  /* Sóng âm thanh: chủ đạo, ở giữa */
+  .wave-card { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 18px 14px 14px; min-height: 0; position: relative; overflow: hidden; }
+  canvas { width: 100%; height: 120px; display: block; }
+  .transcript { margin-top: 10px; min-height: 40px; width: 100%; text-align: center; font-size: 15px;
+    line-height: 1.35; color: var(--fg); opacity: 0; transform: translateY(4px);
+    transition: opacity .35s, transform .35s; overflow: hidden; display: -webkit-box;
+    -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .transcript.show { opacity: 1; transform: none; }
+  .placeholder { margin-top: 10px; font-size: 13px; color: var(--muted); text-align: center; }
+  body.on .placeholder { color: var(--fg); opacity: .7; }
+
+  /* Hàng cài đặt: ngôn ngữ (kiểu iOS: danh sách có viền mờ) */
+  .settings { padding: 4px 0; }
+  .row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; font-size: 14px; }
+  .row + .row { border-top: 1px solid var(--sep); }
+  .row label { color: var(--fg); }
+  select { appearance: none; -webkit-appearance: none; background: transparent; color: var(--blue);
+    border: 0; font: inherit; font-size: 14px; font-weight: 500; padding: 2px 18px 2px 4px; cursor: pointer;
+    background-image: linear-gradient(45deg, transparent 50%, var(--blue) 50%), linear-gradient(135deg, var(--blue) 50%, transparent 50%);
+    background-position: calc(100% - 9px) 50%, calc(100% - 5px) 50%; background-size: 4px 4px; background-repeat: no-repeat;
+    outline: none; direction: rtl; text-align: right; }
+  select option { direction: ltr; color: #000; }
+
+  /* Chú thích phím tắt, dưới đáy */
+  footer { text-align: center; font-size: 11px; color: var(--muted); line-height: 1.5; padding: 0 6px 2px; }
+  kbd { font-family: inherit; font-size: 11px; font-weight: 600; color: var(--fg); background: rgba(127,127,127,.18);
+    border-radius: 5px; padding: 1px 6px; }
+</style>
+</head>
+<body id="body">
+  <header>
+    <span class="title">Voicin</span>
+    <span class="pill"><span class="dot"></span><span id="state">Đã tắt</span></span>
+  </header>
+
+  <section class="card wave-card">
+    <canvas id="wave" width="600" height="240"></canvas>
+    <div class="placeholder" id="placeholder">Nhấn <kbd>Ctrl</kbd> để bắt đầu nói</div>
+    <div class="transcript" id="transcript"></div>
+  </section>
+
+  <section class="card settings">
+    <div class="row">
+      <label for="lang">Ngôn ngữ</label>
+      <select id="lang">
+        <option value="vi-VN" selected>Tiếng Việt</option>
+        <option value="auto">Tự động nhận diện</option>
+        <option value="en-US">English</option>
+        <option value="zh-CN">中文</option>
+        <option value="ja-JP">日本語</option>
+        <option value="ko-KR">한국어</option>
+        <option value="fr-FR">Français</option>
+        <option value="de-DE">Deutsch</option>
+        <option value="es-ES">Español</option>
+        <option value="ru-RU">Русский</option>
+      </select>
+    </div>
+  </section>
+
+  <footer>
+    <kbd>Ctrl</kbd> bật/tắt nghe · Chữ được gõ vào vị trí con trỏ<br>
+    Ctrl+C, Ctrl+V vẫn hoạt động bình thường
+  </footer>
+
+<script>
+(function () {
+  var body = document.getElementById("body");
+  var stateEl = document.getElementById("state");
+  var canvas = document.getElementById("wave");
+  var ctx = canvas.getContext("2d");
+  var placeholder = document.getElementById("placeholder");
+  var transcript = document.getElementById("transcript");
+  var langSel = document.getElementById("lang");
+
+  var BARS = 28;
+  var levels = new Array(BARS).fill(0);   // lịch sử mức âm thanh (mới nhất ở cuối)
+  var current = 0;                        // mức hiện tại nhận từ backend
+  var listening = false;
+  var hideTimer = null;
+
+  function invoke(cmd, args) {
+    var core = window.__TAURI__ && window.__TAURI__.core;
+    if (core) core.invoke(cmd, args || {});
+  }
+
+  function setListening(on) {
+    listening = on;
+    body.classList.toggle("on", on);
+    stateEl.textContent = on ? "Đang nghe" : "Đã tắt";
+    placeholder.style.display = on && !transcript.textContent ? "block" : (on ? "none" : "block");
+    if (!on) current = 0;
+  }
+
+  function showText(t) {
+    transcript.textContent = t;
+    transcript.classList.add("show");
+    placeholder.style.display = "none";
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(function () { transcript.classList.remove("show"); }, 6000);
+  }
+
+  // Vẽ sóng: các thanh bo tròn, đối xứng quanh trục giữa, màu chuyển từ xanh sang tím
+  var lastPush = 0;
+  function draw(t) {
+    var dpr = window.devicePixelRatio || 1;
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    if (canvas.width !== Math.round(w * dpr)) { canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr); }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+
+    // đẩy mẫu mới khoảng 60ms một lần để sóng chạy đều
+    if (t - lastPush > 60) {
+      levels.push(current); levels.shift(); lastPush = t;
+    }
+
+    var gap = 5, barW = (w - gap * (BARS - 1)) / BARS;
+    var grad = ctx.createLinearGradient(0, 0, w, 0);
+    grad.addColorStop(0, "#0a84ff");
+    grad.addColorStop(1, "#bf5af2");
+    ctx.fillStyle = grad;
+
+    for (var i = 0; i < BARS; i++) {
+      var v = levels[i];
+      // khi nghỉ, thanh vẫn thở nhẹ để giao diện không chết
+      var idle = listening ? 0.04 : 0.03;
+      var breathe = (Math.sin(t / 500 + i * 0.6) + 1) * 0.5 * idle;
+      var amp = Math.max(v, breathe);
+      var bh = Math.max(4, amp * h * 0.9);
+      var x = i * (barW + gap), y = (h - bh) / 2;
+      roundRect(ctx, x, y, barW, bh, barW / 2);
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+
+  function roundRect(c, x, y, w, h, r) {
+    r = Math.min(r, h / 2, w / 2);
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+  }
+
+  langSel.addEventListener("change", function () { invoke("set_language", { code: langSel.value }); });
+
+  var ev = window.__TAURI__ && window.__TAURI__.event;
+  if (ev) {
+    ev.listen("listening", function (e) { setListening(!!e.payload); });
+    ev.listen("level", function (e) { current = Number(e.payload) || 0; });
+    ev.listen("text", function (e) { showText(String(e.payload)); });
+  }
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>
